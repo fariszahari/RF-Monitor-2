@@ -1,400 +1,662 @@
 <!DOCTYPE html>
 <html lang="ms">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
 
     <title>RF Voltage Monitor</title>
 
+
     <style>
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+
+            font-family:
+                -apple-system,
+                BlinkMacSystemFont,
+                sans-serif;
+
             text-align: center;
+
             background: #0f172a;
+
             color: white;
+
             padding: 20px;
+
             margin: 0;
         }
 
+
         h1 {
+
             margin-bottom: 10px;
         }
 
+
         .card {
+
             background: #1e293b;
+
             padding: 25px;
+
             border-radius: 15px;
+
             margin: 20px auto;
+
             max-width: 400px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+
+            box-shadow:
+                0 4px 10px
+                rgba(0,0,0,0.3);
         }
 
+
         button {
+
             background: #0ea5e9;
+
             color: white;
+
             border: none;
+
             padding: 12px 24px;
+
             font-size: 16px;
+
             font-weight: bold;
+
             border-radius: 25px;
+
             cursor: pointer;
+
             transition: 0.2s;
         }
 
+
         button:active {
+
             transform: scale(0.95);
         }
 
+
         .value {
+
             font-size: 48px;
+
             font-weight: bold;
+
             color: #38bdf8;
+
             margin: 15px 0;
+
             font-family: monospace;
         }
 
+
         .unit {
+
             font-size: 18px;
+
             color: #94a3b8;
         }
 
+
         .status {
+
             font-size: 14px;
+
             color: #cbd5e1;
+
             margin-bottom: 20px;
         }
 
+
         .indicator {
+
             width: 15px;
+
             height: 15px;
+
             border-radius: 50%;
+
             background: #64748b;
+
             display: inline-block;
+
             margin-right: 6px;
         }
 
+
         .connected {
+
             background: #22c55e;
         }
 
+
         .error {
+
             background: #ef4444;
         }
 
+
         .small {
+
             font-size: 16px;
+
             color: #94a3b8;
+
             margin-top: 10px;
         }
 
-        /* Status susu */
+
+        /* STATUS SUSU */
+
         .milk-status {
+
             margin-top: 20px;
+
             padding: 15px;
+
             border-radius: 12px;
+
             background: #22c55e;
+
             color: white;
+
             font-size: 24px;
+
             font-weight: bold;
+
+            transition: 0.2s;
         }
 
+
         .milk-status.rosak {
+
             background: #ef4444;
+
             animation: blink 1s infinite;
         }
 
+
         @keyframes blink {
+
             50% {
+
                 opacity: 0.6;
             }
         }
+
+
+        .threshold-info {
+
+            margin-top: 15px;
+
+            font-size: 14px;
+
+            color: #94a3b8;
+        }
+
     </style>
+
 </head>
+
 
 <body>
 
+
     <h1>📡 RF Voltage Monitor</h1>
 
+
     <div class="status">
-        <span id="indicator" class="indicator"></span>
-        <span id="status">Sedia untuk disambung</span>
+
+        <span
+            id="indicator"
+            class="indicator"
+        ></span>
+
+        <span id="status">
+            Sedia untuk disambung
+        </span>
+
     </div>
 
-    <button id="connectBtn" onclick="sambungBLE()">
+
+    <button
+        id="connectBtn"
+        onclick="sambungBLE()"
+    >
         Sambung ke ESP32
     </button>
 
+
     <div class="card">
 
+
         <div class="unit">
+
             VOLTAN AD8318
+
         </div>
 
-        <div class="value" id="voltValue">
+
+        <div
+            class="value"
+            id="voltValue"
+        >
+
             --.--- V
+
         </div>
 
-        <div class="small" id="milliVoltValue">
+
+        <div
+            class="small"
+            id="milliVoltValue"
+        >
+
             ---- mV
+
         </div>
+
 
         <!-- STATUS SUSU -->
-        <div id="milkStatus" class="milk-status">
+
+        <div
+            id="milkStatus"
+            class="milk-status"
+        >
+
             🥛 NORMAL
+
         </div>
+
+
+        <!-- THRESHOLD -->
+
+        <div class="threshold-info">
+
+            Threshold:
+            <strong>2.000 V</strong>
+
+        </div>
+
 
     </div>
 
 
 <script>
 
-// ========================================
-// THRESHOLD VOLTAN
-// ========================================
-//
-// Tukar nilai ini sahaja jika mahu ubah
-// threshold.
-//
-// Contoh:
-// 2.000 = 2.000 V
-// 1.800 = 1.800 V
-// 2.500 = 2.500 V
-//
-const VOLTAGE_THRESHOLD = 2.000;
 
-
-// ========================================
-// BLE UUID
-// ========================================
+// ============================================================
+// BLE CONFIGURATION
+// MESTI SAMA DENGAN ESP32
+// ============================================================
 
 const SERVICE_UUID =
     "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+
 
 const CHARACTERISTIC_UUID =
     "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
 
-// Untuk mengelakkan alert berulang kali
+// ============================================================
+// THRESHOLD
+// ============================================================
+//
+// TETAP 2.000 V
+//
+// Jangan ubah melalui HTML.
+//
+// ============================================================
+
+const VOLTAGE_THRESHOLD = 2.000;
+
+
+// ============================================================
+// VARIABLES
+// ============================================================
+
 let alertSudahKeluar = false;
 
+let device = null;
+
+let characteristic = null;
+
+
+// ============================================================
+// SAMBUNG BLE
+// ============================================================
 
 async function sambungBLE() {
 
     try {
 
-        document.getElementById("status").innerText =
+
+        document.getElementById(
+            "status"
+        ).innerText =
             "Sedang mencari ESP32...";
 
-        document.getElementById("indicator").className =
+
+        document.getElementById(
+            "indicator"
+        ).className =
             "indicator";
 
 
-        // Cari ESP32
-        const device =
+        // ====================================================
+        // CARI ESP32
+        // ====================================================
+
+        device =
             await navigator.bluetooth.requestDevice({
 
                 filters: [
+
                     {
                         name: "ESP32_RF_BLE"
                     }
+
                 ],
 
                 optionalServices: [
+
                     SERVICE_UUID
+
                 ]
 
             });
 
 
-        document.getElementById("status").innerText =
+        document.getElementById(
+            "status"
+        ).innerText =
             "Menyambung...";
 
 
-        // Sambung GATT
+        // ====================================================
+        // CONNECT GATT
+        // ====================================================
+
         const server =
             await device.gatt.connect();
 
 
-        // Dapatkan service
+        // ====================================================
+        // GET SERVICE
+        // ====================================================
+
         const service =
             await server.getPrimaryService(
                 SERVICE_UUID
             );
 
 
-        // Dapatkan characteristic
-        const characteristic =
+        // ====================================================
+        // GET CHARACTERISTIC
+        // ====================================================
+
+        characteristic =
             await service.getCharacteristic(
                 CHARACTERISTIC_UUID
             );
 
 
-        // Status berjaya
-        document.getElementById("status").innerText =
+        // ====================================================
+        // STATUS CONNECTED
+        // ====================================================
+
+        document.getElementById(
+            "status"
+        ).innerText =
             "Disambungkan! 🟢";
 
-        document.getElementById("indicator").className =
+
+        document.getElementById(
+            "indicator"
+        ).className =
             "indicator connected";
 
-        document.getElementById("connectBtn").style.display =
+
+        document.getElementById(
+            "connectBtn"
+        ).style.display =
             "none";
 
 
-        // Mulakan notification
+        // ====================================================
+        // START NOTIFICATION
+        // ====================================================
+
         await characteristic.startNotifications();
 
 
         characteristic.addEventListener(
             "characteristicvaluechanged",
-            function(event) {
-
-                const decoder =
-                    new TextDecoder("utf-8");
-
-
-                const dataRaw =
-                    decoder.decode(
-                        event.target.value
-                    ).trim();
-
-
-                // ESP32 menghantar:
-                //
-                // 1.732
-                //
-                const voltage =
-                    parseFloat(dataRaw);
-
-
-                if (!isNaN(voltage)) {
-
-                    // ====================================
-                    // PAPAR VOLT
-                    // ====================================
-
-                    document.getElementById(
-                        "voltValue"
-                    ).innerText =
-                        voltage.toFixed(3) + " V";
-
-
-                    // ====================================
-                    // PAPAR MILLIVOLT
-                    // ====================================
-
-                    const millivolt =
-                        voltage * 1000;
-
-
-                    document.getElementById(
-                        "milliVoltValue"
-                    ).innerText =
-                        millivolt.toFixed(0) + " mV";
-
-
-                    // ====================================
-                    // CHECK THRESHOLD
-                    // ====================================
-
-                    const milkStatus =
-                        document.getElementById(
-                            "milkStatus"
-                        );
-
-
-                    // Jika voltan lebih daripada
-                    // threshold
-                    if (
-                        voltage > VOLTAGE_THRESHOLD
-                    ) {
-
-                        milkStatus.innerText =
-                            "🚨 SUSU ROSAK";
-
-                        milkStatus.classList.add(
-                            "rosak"
-                        );
-
-
-                        // Alert hanya sekali
-                        if (!alertSudahKeluar) {
-
-                            alertSudahKeluar = true;
-
-                            alert(
-                                "🚨 AMARAN!\n\n" +
-                                "SUSU ROSAK\n\n" +
-                                "Voltan: " +
-                                voltage.toFixed(3) +
-                                " V\n" +
-                                "Melebihi threshold."
-                            );
-                        }
-
-                    }
-
-                    // ====================================
-                    // VOLTAN NORMAL
-                    // ====================================
-
-                    else {
-
-                        milkStatus.innerText =
-                            "🥛 NORMAL";
-
-                        milkStatus.classList.remove(
-                            "rosak"
-                        );
-
-
-                        // Reset alert supaya apabila
-                        // voltan naik semula, alert
-                        // boleh keluar lagi
-                        alertSudahKeluar = false;
-                    }
-
-                }
-
-            }
+            terimaDataBLE
         );
 
 
-        // ====================================
-        // CONNECTION TERPUTUS
-        // ====================================
+        // ====================================================
+        // DISCONNECTED EVENT
+        // ====================================================
 
         device.addEventListener(
             "gattserverdisconnected",
             function() {
 
-                document.getElementById("status").innerText =
+                document.getElementById(
+                    "status"
+                ).innerText =
                     "Terputus daripada ESP32";
 
-                document.getElementById("indicator").className =
+
+                document.getElementById(
+                    "indicator"
+                ).className =
                     "indicator error";
 
-                document.getElementById("connectBtn").style.display =
+
+                document.getElementById(
+                    "connectBtn"
+                ).style.display =
                     "inline-block";
+
             }
         );
 
     }
 
+
     catch (error) {
 
         console.error(error);
 
-        document.getElementById("status").innerText =
+
+        document.getElementById(
+            "status"
+        ).innerText =
             "Ralat: " + error.message;
 
-        document.getElementById("indicator").className =
+
+        document.getElementById(
+            "indicator"
+        ).className =
             "indicator error";
     }
 }
 
+
+// ============================================================
+// TERIMA DATA BLE
+// ============================================================
+
+function terimaDataBLE(event) {
+
+
+    const decoder =
+        new TextDecoder("utf-8");
+
+
+    const dataRaw =
+        decoder
+            .decode(event.target.value)
+            .trim();
+
+
+    // ========================================================
+    // ESP32 MESTI HANTAR CONTOH:
+    //
+    // 1.732
+    //
+    // ========================================================
+
+    const voltage =
+        parseFloat(dataRaw);
+
+
+    // ========================================================
+    // SEMAK DATA
+    // ========================================================
+
+    if (
+        isNaN(voltage)
+    ) {
+
+        console.warn(
+            "Data BLE tidak sah:",
+            dataRaw
+        );
+
+        return;
+    }
+
+
+    // ========================================================
+    // PAPAR VOLT
+    // ========================================================
+
+    document.getElementById(
+        "voltValue"
+    ).innerText =
+        voltage.toFixed(3) + " V";
+
+
+    // ========================================================
+    // PAPAR MILLIVOLT
+    // ========================================================
+
+    const millivolt =
+        voltage * 1000;
+
+
+    document.getElementById(
+        "milliVoltValue"
+    ).innerText =
+        millivolt.toFixed(0) + " mV";
+
+
+    // ========================================================
+    // STATUS SUSU
+    // ========================================================
+
+    const milkStatus =
+        document.getElementById(
+            "milkStatus"
+        );
+
+
+    // ========================================================
+    // SUSU ROSAK
+    // ========================================================
+
+    if (
+        voltage >
+        VOLTAGE_THRESHOLD
+    ) {
+
+
+        milkStatus.innerText =
+            "🚨 SUSU ROSAK";
+
+
+        milkStatus.classList.add(
+            "rosak"
+        );
+
+
+        // ====================================================
+        // ALERT SEKALI SAHAJA
+        // ====================================================
+
+        if (
+            !alertSudahKeluar
+        ) {
+
+            alertSudahKeluar = true;
+
+
+            alert(
+
+                "🚨 AMARAN!\n\n" +
+
+                "SUSU ROSAK\n\n" +
+
+                "Voltan: " +
+
+                voltage.toFixed(3) +
+
+                " V\n\n" +
+
+                "Threshold: " +
+
+                VOLTAGE_THRESHOLD.toFixed(3) +
+
+                " V"
+
+            );
+        }
+
+    }
+
+
+    // ========================================================
+    // NORMAL
+    // ========================================================
+
+    else {
+
+
+        milkStatus.innerText =
+            "🥛 NORMAL";
+
+
+        milkStatus.classList.remove(
+            "rosak"
+        );
+
+
+        // Reset supaya alert boleh keluar
+        // semula jika voltan naik melebihi
+        // threshold kemudian.
+
+        alertSudahKeluar = false;
+    }
+
+}
+
 </script>
 
+
 </body>
+
 </html>
-
-
