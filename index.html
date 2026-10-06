@@ -86,6 +86,28 @@
             color: #94a3b8;
             margin-top: 10px;
         }
+
+        /* Status susu */
+        .milk-status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            background: #22c55e;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .milk-status.rosak {
+            background: #ef4444;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0.6;
+            }
+        }
     </style>
 </head>
 
@@ -116,16 +138,44 @@
             ---- mV
         </div>
 
+        <!-- STATUS SUSU -->
+        <div id="milkStatus" class="milk-status">
+            🥛 NORMAL
+        </div>
+
     </div>
 
 
 <script>
+
+// ========================================
+// THRESHOLD VOLTAN
+// ========================================
+//
+// Tukar nilai ini sahaja jika mahu ubah
+// threshold.
+//
+// Contoh:
+// 2.000 = 2.000 V
+// 1.800 = 1.800 V
+// 2.500 = 2.500 V
+//
+const VOLTAGE_THRESHOLD = 2.000;
+
+
+// ========================================
+// BLE UUID
+// ========================================
 
 const SERVICE_UUID =
     "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 
 const CHARACTERISTIC_UUID =
     "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+
+
+// Untuk mengelakkan alert berulang kali
+let alertSudahKeluar = false;
 
 
 async function sambungBLE() {
@@ -140,19 +190,20 @@ async function sambungBLE() {
 
 
         // Cari ESP32
-        const device = await navigator.bluetooth.requestDevice({
+        const device =
+            await navigator.bluetooth.requestDevice({
 
-            filters: [
-                {
-                    name: "ESP32_RF_BLE"
-                }
-            ],
+                filters: [
+                    {
+                        name: "ESP32_RF_BLE"
+                    }
+                ],
 
-            optionalServices: [
-                SERVICE_UUID
-            ]
+                optionalServices: [
+                    SERVICE_UUID
+                ]
 
-        });
+            });
 
 
         document.getElementById("status").innerText =
@@ -200,34 +251,37 @@ async function sambungBLE() {
                 const decoder =
                     new TextDecoder("utf-8");
 
+
                 const dataRaw =
                     decoder.decode(
                         event.target.value
                     ).trim();
 
 
-                // ESP32 sekarang menghantar:
+                // ESP32 menghantar:
                 //
                 // 1.732
                 //
-                // bukannya:
-                //
-                // -15.4,1.73
-
                 const voltage =
                     parseFloat(dataRaw);
 
 
                 if (!isNaN(voltage)) {
 
-                    // Papar Volt
+                    // ====================================
+                    // PAPAR VOLT
+                    // ====================================
+
                     document.getElementById(
                         "voltValue"
                     ).innerText =
                         voltage.toFixed(3) + " V";
 
 
-                    // Papar millivolt
+                    // ====================================
+                    // PAPAR MILLIVOLT
+                    // ====================================
+
                     const millivolt =
                         voltage * 1000;
 
@@ -236,13 +290,79 @@ async function sambungBLE() {
                         "milliVoltValue"
                     ).innerText =
                         millivolt.toFixed(0) + " mV";
+
+
+                    // ====================================
+                    // CHECK THRESHOLD
+                    // ====================================
+
+                    const milkStatus =
+                        document.getElementById(
+                            "milkStatus"
+                        );
+
+
+                    // Jika voltan lebih daripada
+                    // threshold
+                    if (
+                        voltage > VOLTAGE_THRESHOLD
+                    ) {
+
+                        milkStatus.innerText =
+                            "🚨 SUSU ROSAK";
+
+                        milkStatus.classList.add(
+                            "rosak"
+                        );
+
+
+                        // Alert hanya sekali
+                        if (!alertSudahKeluar) {
+
+                            alertSudahKeluar = true;
+
+                            alert(
+                                "🚨 AMARAN!\n\n" +
+                                "SUSU ROSAK\n\n" +
+                                "Voltan: " +
+                                voltage.toFixed(3) +
+                                " V\n" +
+                                "Melebihi threshold."
+                            );
+                        }
+
+                    }
+
+                    // ====================================
+                    // VOLTAN NORMAL
+                    // ====================================
+
+                    else {
+
+                        milkStatus.innerText =
+                            "🥛 NORMAL";
+
+                        milkStatus.classList.remove(
+                            "rosak"
+                        );
+
+
+                        // Reset alert supaya apabila
+                        // voltan naik semula, alert
+                        // boleh keluar lagi
+                        alertSudahKeluar = false;
+                    }
+
                 }
 
             }
         );
 
 
-        // Jika connection terputus
+        // ====================================
+        // CONNECTION TERPUTUS
+        // ====================================
+
         device.addEventListener(
             "gattserverdisconnected",
             function() {
@@ -276,3 +396,5 @@ async function sambungBLE() {
 
 </body>
 </html>
+
+
