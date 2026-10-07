@@ -1,1061 +1,1561 @@
 <!DOCTYPE html>
 <html lang="ms">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1"
-    >
-
-    <title>RF Voltage Monitor</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RF Milk Sensor - BLE Monitor</title>
 
     <style>
-
         * {
             box-sizing: border-box;
         }
 
-
         body {
-
-            font-family:
-                -apple-system,
-                BlinkMacSystemFont,
-                "Segoe UI",
-                sans-serif;
-
-            text-align: center;
-
-            background: #0f172a;
-
-            color: white;
-
-            padding: 20px;
-
             margin: 0;
-
+            font-family: Arial, Helvetica, sans-serif;
+            background: #0b1220;
+            color: #ffffff;
         }
 
+        .container {
+            width: 95%;
+            max-width: 1100px;
+            margin: 30px auto;
+        }
 
         h1 {
-
-            margin-top: 10px;
-
-            margin-bottom: 10px;
-
-            font-size: 28px;
-
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 30px;
         }
 
+        .subtitle {
+            text-align: center;
+            color: #9ca3af;
+            margin-bottom: 25px;
+        }
 
-        .status {
-
-            margin-top: 10px;
-
+        .top-panel {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
             margin-bottom: 20px;
-
-            font-size: 15px;
-
-            color: #cbd5e1;
-
         }
-
-
-        .indicator {
-
-            width: 15px;
-
-            height: 15px;
-
-            border-radius: 50%;
-
-            background: #64748b;
-
-            display: inline-block;
-
-            margin-right: 6px;
-
-            vertical-align: middle;
-
-        }
-
-
-        .connected {
-
-            background: #22c55e;
-
-            box-shadow:
-                0 0 10px
-                rgba(34, 197, 94, 0.8);
-
-        }
-
-
-        .error {
-
-            background: #ef4444;
-
-            box-shadow:
-                0 0 10px
-                rgba(239, 68, 68, 0.8);
-
-        }
-
 
         button {
-
-            background: #0ea5e9;
-
-            color: white;
-
             border: none;
-
-            padding: 14px 26px;
-
+            border-radius: 8px;
+            padding: 13px 22px;
             font-size: 16px;
-
             font-weight: bold;
-
-            border-radius: 30px;
-
             cursor: pointer;
+        }
 
-            transition: 0.2s;
+        #connectButton {
+            background: #2563eb;
+            color: white;
+        }
 
+        #connectButton:hover {
+            background: #1d4ed8;
+        }
+
+        #disconnectButton {
+            background: #dc2626;
+            color: white;
+            display: none;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 8px;
+            background: #1f2937;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ef4444;
+        }
+
+        .status-dot.connected {
+            background: #22c55e;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
             margin-bottom: 20px;
-
         }
-
-
-        button:hover {
-
-            background: #0284c7;
-
-        }
-
-
-        button:active {
-
-            transform: scale(0.95);
-
-        }
-
-
-        button:disabled {
-
-            background: #475569;
-
-            cursor: not-allowed;
-
-        }
-
 
         .card {
-
-            background: #1e293b;
-
-            padding: 25px;
-
-            border-radius: 18px;
-
-            margin: 20px auto;
-
-            max-width: 450px;
-
-            box-shadow:
-                0 4px 15px
-                rgba(0,0,0,0.3);
-
+            background: #111827;
+            border-radius: 14px;
+            padding: 22px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.25);
         }
 
-
-        .unit {
-
-            font-size: 18px;
-
-            color: #94a3b8;
-
+        .card-title {
+            color: #9ca3af;
+            font-size: 14px;
             margin-bottom: 10px;
-
         }
-
 
         .value {
-
-            font-size: 52px;
-
+            font-size: 32px;
             font-weight: bold;
-
-            color: #38bdf8;
-
-            margin: 10px 0;
-
-            font-family: monospace;
-
         }
 
-
-        .millivolt {
-
-            font-size: 20px;
-
-            color: #94a3b8;
-
-            margin-bottom: 20px;
-
-            font-family: monospace;
-
+        .unit {
+            font-size: 17px;
+            color: #9ca3af;
+            margin-left: 5px;
         }
 
+        .frequency {
+            color: #60a5fa;
+        }
+
+        .voltage {
+            color: #facc15;
+        }
+
+        .status-normal {
+            color: #22c55e;
+        }
+
+        .status-spoiled {
+            color: #ef4444;
+        }
 
         .threshold {
-
-            font-size: 15px;
-
-            color: #94a3b8;
-
-            margin-top: 15px;
-
+            color: #f97316;
         }
 
+        .graph-container {
+            background: #111827;
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
 
-        .milkStatus {
-
-            padding: 18px;
-
-            border-radius: 15px;
-
-            font-size: 24px;
-
+        .graph-title {
+            font-size: 18px;
             font-weight: bold;
-
-            margin-top: 20px;
-
-            background: #166534;
-
-            color: white;
-
-        }
-
-
-        .milkStatus.rosak {
-
-            background: #dc2626;
-
-            box-shadow:
-                0 0 20px
-                rgba(220, 38, 38, 0.6);
-
-        }
-
-
-        .milkStatus.normal {
-
-            background: #166534;
-
-        }
-
-
-        .info {
-
-            max-width: 450px;
-
-            margin: 20px auto;
-
-            padding: 15px;
-
-            border-radius: 12px;
-
-            background: #172033;
-
-            color: #94a3b8;
-
-            font-size: 13px;
-
-            line-height: 1.6;
-
-        }
-
-
-        .alertBox {
-
-            display: none;
-
-            position: fixed;
-
-            left: 20px;
-
-            right: 20px;
-
-            top: 50%;
-
-            transform: translateY(-50%);
-
-            max-width: 420px;
-
-            margin: auto;
-
-            background: #7f1d1d;
-
-            color: white;
-
-            padding: 30px 20px;
-
-            border-radius: 20px;
-
-            box-shadow:
-                0 0 40px
-                rgba(239,68,68,0.7);
-
-            z-index: 1000;
-
-        }
-
-
-        .alertBox.show {
-
-            display: block;
-
-        }
-
-
-        .alertTitle {
-
-            font-size: 32px;
-
-            font-weight: bold;
-
             margin-bottom: 15px;
-
         }
 
+        canvas {
+            width: 100%;
+            height: 350px;
+            background: #0b1220;
+            border-radius: 10px;
+        }
 
-        .alertVoltage {
+        .data-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+        }
 
-            font-size: 28px;
+        .info-box {
+            background: #1f2937;
+            padding: 15px;
+            border-radius: 10px;
+        }
 
-            font-family: monospace;
+        .info-title {
+            font-size: 13px;
+            color: #9ca3af;
+        }
 
+        .info-value {
+            margin-top: 5px;
+            font-size: 18px;
             font-weight: bold;
-
-            margin: 15px 0;
-
         }
 
-
-        .closeAlert {
-
-            background: white;
-
-            color: #991b1b;
-
+        .message {
+            text-align: center;
+            color: #9ca3af;
             margin-top: 15px;
-
-            margin-bottom: 0;
-
+            min-height: 20px;
         }
 
+        /* Alert popup */
 
-        .closeAlert:hover {
-
-            background: #f1f5f9;
-
+        #alertBox {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 420px;
+            background: #7f1d1d;
+            border: 2px solid #ef4444;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            display: none;
+            z-index: 9999;
+            box-shadow: 0 0 40px rgba(239,68,68,0.5);
         }
 
+        #alertBox h2 {
+            color: #fecaca;
+            margin-top: 0;
+        }
+
+        #alertBox p {
+            font-size: 18px;
+        }
+
+        #closeAlert {
+            background: #ef4444;
+            color: white;
+            margin-top: 10px;
+        }
+
+        .footer {
+            text-align: center;
+            color: #6b7280;
+            font-size: 12px;
+            margin-top: 25px;
+        }
     </style>
-
 </head>
-
 
 <body>
 
+<div class="container">
 
-    <h1>
-        📡 RF Voltage Monitor
-    </h1>
+    <h1>RF Milk Sensor</h1>
 
-
-    <!-- STATUS -->
-
-    <div class="status">
-
-        <span
-            id="indicator"
-            class="indicator"
-        ></span>
-
-        <span id="status">
-            Sedia untuk disambung
-        </span>
-
+    <div class="subtitle">
+        2.45 GHz Patch Antenna + ADF4351 + AD8318 + ESP32 BLE
     </div>
 
+    <!-- CONNECTION -->
+    <div class="top-panel">
 
-    <!-- CONNECT BUTTON -->
-
-    <button
-        id="connectBtn"
-        onclick="sambungBLE()"
-    >
-        🔵 Sambung ke ESP32
-    </button>
-
-
-    <!-- MAIN CARD -->
-
-    <div class="card">
-
-
-        <div class="unit">
-            VOLTAN AD8318
+        <div class="status">
+            <div id="statusDot" class="status-dot"></div>
+            <span id="connectionStatus">BLE Disconnected</span>
         </div>
 
+        <button id="connectButton" onclick="sambungBLE()">
+            CONNECT BLE
+        </button>
 
-        <div
-            class="value"
-            id="voltValue"
-        >
-            --.--- V
-        </div>
-
-
-        <div
-            class="millivolt"
-            id="milliVoltValue"
-        >
-            ---- mV
-        </div>
-
-
-        <!-- MILK STATUS -->
-
-        <div
-            id="milkStatus"
-            class="milkStatus normal"
-        >
-            🥛 NORMAL
-        </div>
-
-
-        <!-- THRESHOLD -->
-
-        <div class="threshold">
-
-            Threshold SUSU ROSAK:
-
-            <strong>
-                2.000 V
-            </strong>
-
-        </div>
-
-    </div>
-
-
-    <!-- INFORMATION -->
-
-    <div class="info">
-
-        <strong>ESP32 BLE</strong>
-        <br>
-
-        Device:
-        <span id="deviceName">
-            ESP32_RF_BLE
-        </span>
-
-        <br><br>
-
-        Bacaan diterima secara wireless
-        daripada AD8318 melalui ESP32.
-
-    </div>
-
-
-    <!-- ALERT -->
-
-    <div
-        id="alertBox"
-        class="alertBox"
-    >
-
-        <div class="alertTitle">
-            🚨 SUSU ROSAK
-        </div>
-
-
-        <div>
-            Voltan telah melebihi
-            threshold.
-        </div>
-
-
-        <div
-            id="alertVoltage"
-            class="alertVoltage"
-        >
-            2.000 V
-        </div>
-
-
-        <div>
-            Threshold:
-            <strong>
-                2.000 V
-            </strong>
-        </div>
-
-
-        <button
-            class="closeAlert"
-            onclick="tutupAlert()"
-        >
-            OK
+        <button id="disconnectButton" onclick="putusBLE()">
+            DISCONNECT
         </button>
 
     </div>
 
 
+    <!-- MAIN VALUES -->
+
+    <div class="cards">
+
+        <!-- FREQUENCY -->
+
+        <div class="card">
+
+            <div class="card-title">
+                RF FREQUENCY
+            </div>
+
+            <div class="value frequency">
+                <span id="frequencyValue">2450.000</span>
+                <span class="unit">MHz</span>
+            </div>
+
+        </div>
+
+
+        <!-- VOLTAGE -->
+
+        <div class="card">
+
+            <div class="card-title">
+                AD8318 VOLTAGE
+            </div>
+
+            <div class="value voltage">
+                <span id="voltageValue">0.000</span>
+                <span class="unit">V</span>
+            </div>
+
+            <div style="margin-top:8px;color:#9ca3af;">
+                <span id="voltageMV">0</span> mV
+            </div>
+
+        </div>
+
+
+        <!-- MILK STATUS -->
+
+        <div class="card">
+
+            <div class="card-title">
+                MILK CONDITION
+            </div>
+
+            <div id="milkStatus"
+                 class="value status-normal">
+                NORMAL
+            </div>
+
+        </div>
+
+
+        <!-- THRESHOLD -->
+
+        <div class="card">
+
+            <div class="card-title">
+                DETECTION THRESHOLD
+            </div>
+
+            <div class="value threshold">
+                <span id="thresholdValue">2.000</span>
+                <span class="unit">V</span>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- GRAPH -->
+
+    <div class="graph-container">
+
+        <div class="graph-title">
+            AD8318 Voltage Real-Time Graph
+        </div>
+
+        <canvas id="voltageGraph"
+                width="1000"
+                height="350">
+        </canvas>
+
+    </div>
+
+
+    <!-- DATA INFORMATION -->
+
+    <div class="data-info">
+
+        <div class="info-box">
+
+            <div class="info-title">
+                BLE DEVICE
+            </div>
+
+            <div class="info-value">
+                ESP32_RF_BLE
+            </div>
+
+        </div>
+
+
+        <div class="info-box">
+
+            <div class="info-title">
+                ADC PIN
+            </div>
+
+            <div class="info-value">
+                GPIO32
+            </div>
+
+        </div>
+
+
+        <div class="info-box">
+
+            <div class="info-title">
+                SENSOR
+            </div>
+
+            <div class="info-value">
+                AD8318
+            </div>
+
+        </div>
+
+
+        <div class="info-box">
+
+            <div class="info-title">
+                ANTENNA
+            </div>
+
+            <div class="info-value">
+                2.45 GHz Patch
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div id="message"
+         class="message">
+        Sila sambungkan ESP32 melalui Bluetooth BLE.
+    </div>
+
+
+    <div class="footer">
+        RF Milk Freshness Sensor | ESP32 BLE Monitoring
+    </div>
+
+</div>
+
+
+<!-- ALERT -->
+
+<div id="alertBox">
+
+    <h2>⚠ SUSU ROSAK</h2>
+
+    <p>
+        Bacaan AD8318 telah melebihi
+        threshold yang ditetapkan.
+    </p>
+
+    <p>
+        Voltage:
+        <strong>
+            <span id="alertVoltage">0.000</span> V
+        </strong>
+    </p>
+
+    <button id="closeAlert"
+            onclick="tutupAlert()">
+        TUTUP
+    </button>
+
+</div>
+
+
 <script>
 
+    /* =========================================================
+       BLE CONFIGURATION
+       ========================================================= */
 
-// ============================================================
-// BLE CONFIGURATION
-// ============================================================
+    const BLE_DEVICE_NAME = "ESP32_RF_BLE";
 
+    const SERVICE_UUID =
+        "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 
-// Nama BLE ESP32
-const BLE_DEVICE_NAME =
-    "ESP32_RF_BLE";
-
-
-// Service UUID
-const SERVICE_UUID =
-    "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+    const CHARACTERISTIC_UUID =
+        "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
 
-// Characteristic UUID
-const CHARACTERISTIC_UUID =
-    "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+    /* =========================================================
+       SENSOR CONFIGURATION
+       ========================================================= */
+
+    const VOLTAGE_THRESHOLD = 2.000;
+
+    const DEFAULT_FREQUENCY_MHZ = 2450.000;
+
+    const MAX_GRAPH_POINTS = 100;
 
 
-// ============================================================
-// THRESHOLD
-// ============================================================
-//
-// 2.000 V = threshold SUSU ROSAK
-//
-// Threshold tidak dipaparkan sebagai
-// input yang boleh diubah pengguna.
-// Nilai ditetapkan di dalam kod.
-//
+    /* =========================================================
+       BLE VARIABLES
+       ========================================================= */
 
-const VOLTAGE_THRESHOLD =
-    2.000;
+    let bleDevice = null;
+
+    let bleServer = null;
+
+    let bleCharacteristic = null;
 
 
-// ============================================================
-// BLE VARIABLES
-// ============================================================
+    /* =========================================================
+       GRAPH VARIABLES
+       ========================================================= */
 
-let bluetoothDevice = null;
+    let voltageHistory = [];
 
-let characteristic = null;
+    let timeHistory = [];
 
-
-// ============================================================
-// ALERT CONTROL
-// ============================================================
-
-let alertSudahKeluar = false;
+    let sampleNumber = 0;
 
 
-// ============================================================
-// ELEMENTS
-// ============================================================
+    /* =========================================================
+       PAGE INITIALIZATION
+       ========================================================= */
 
-const statusElement =
-    document.getElementById("status");
+    window.onload = function() {
 
-const indicatorElement =
-    document.getElementById("indicator");
+        document.getElementById("thresholdValue")
+            .textContent = VOLTAGE_THRESHOLD.toFixed(3);
 
-const connectButton =
-    document.getElementById("connectBtn");
+        document.getElementById("frequencyValue")
+            .textContent = DEFAULT_FREQUENCY_MHZ.toFixed(3);
 
-const voltValueElement =
-    document.getElementById("voltValue");
+        drawGraph();
 
-const milliVoltElement =
-    document.getElementById("milliVoltValue");
+        periksaWebBluetooth();
 
-const milkStatusElement =
-    document.getElementById("milkStatus");
-
-const alertBox =
-    document.getElementById("alertBox");
-
-const alertVoltageElement =
-    document.getElementById("alertVoltage");
+    };
 
 
-// ============================================================
-// CHECK WEB BLUETOOTH
-// ============================================================
+    /* =========================================================
+       CHECK WEB BLUETOOTH
+       ========================================================= */
 
-function periksaWebBluetooth() {
+    function periksaWebBluetooth() {
 
-    if (
-        !navigator.bluetooth
-    ) {
+        if (!navigator.bluetooth) {
 
-        statusElement.innerText =
-            "Browser ini tidak menyokong Web Bluetooth";
+            document.getElementById("message").textContent =
+                "Browser ini tidak menyokong Web Bluetooth.";
 
-        indicatorElement.className =
-            "indicator error";
+            document.getElementById("connectButton").disabled = true;
 
-        connectButton.disabled =
-            true;
+            return;
+        }
 
-        return false;
-    }
+        document.getElementById("message").textContent =
+            "Web Bluetooth tersedia. Tekan CONNECT BLE.";
 
-    return true;
-}
-
-
-// ============================================================
-// CONNECT BLE
-// ============================================================
-
-async function sambungBLE() {
-
-
-    if (!periksaWebBluetooth()) {
-        return;
     }
 
 
-    try {
+    /* =========================================================
+       CONNECT BLE
+       ========================================================= */
+
+    async function sambungBLE() {
+
+        try {
+
+            document.getElementById("message").textContent =
+                "Mencari ESP32_RF_BLE...";
 
 
-        // ----------------------------------------------------
-        // STATUS
-        // ----------------------------------------------------
-
-        statusElement.innerText =
-            "Sedang mencari ESP32...";
-
-
-        indicatorElement.className =
-            "indicator";
-
-
-        connectButton.disabled =
-            true;
-
-
-        // ----------------------------------------------------
-        // REQUEST DEVICE
-        // ----------------------------------------------------
-
-        bluetoothDevice =
-            await navigator.bluetooth.requestDevice({
+            bleDevice = await navigator.bluetooth.requestDevice({
 
                 filters: [
-
                     {
-                        name:
-                            BLE_DEVICE_NAME
+                        name: BLE_DEVICE_NAME
                     }
-
                 ],
 
                 optionalServices: [
-
                     SERVICE_UUID
-
                 ]
 
             });
 
 
-        // ----------------------------------------------------
-        // DISCONNECTED EVENT
-        // ----------------------------------------------------
-
-        bluetoothDevice.addEventListener(
-            "gattserverdisconnected",
-            apabilaTerputus
-        );
-
-
-        // ----------------------------------------------------
-        // CONNECT GATT
-        // ----------------------------------------------------
-
-        statusElement.innerText =
-            "Menyambung kepada ESP32...";
-
-
-        const server =
-            await bluetoothDevice.gatt.connect();
-
-
-        // ----------------------------------------------------
-        // GET SERVICE
-        // ----------------------------------------------------
-
-        const service =
-            await server.getPrimaryService(
-                SERVICE_UUID
+            bleDevice.addEventListener(
+                "gattserverdisconnected",
+                apabilaBLEPutus
             );
 
 
-        // ----------------------------------------------------
-        // GET CHARACTERISTIC
-        // ----------------------------------------------------
+            document.getElementById("message").textContent =
+                "ESP32 dijumpai. Menyambung...";
 
-        characteristic =
-            await service.getCharacteristic(
-                CHARACTERISTIC_UUID
+
+            bleServer =
+                await bleDevice.gatt.connect();
+
+
+            const service =
+                await bleServer.getPrimaryService(
+                    SERVICE_UUID
+                );
+
+
+            bleCharacteristic =
+                await service.getCharacteristic(
+                    CHARACTERISTIC_UUID
+                );
+
+
+            await bleCharacteristic.startNotifications();
+
+
+            bleCharacteristic.addEventListener(
+                "characteristicvaluechanged",
+                terimaDataBLE
             );
 
 
-        // ----------------------------------------------------
-        // START NOTIFICATIONS
-        // ----------------------------------------------------
-
-        await characteristic.startNotifications();
+            document.getElementById("statusDot")
+                .classList.add("connected");
 
 
-        characteristic.addEventListener(
-            "characteristicvaluechanged",
-            terimaDataBLE
-        );
+            document.getElementById("connectionStatus")
+                .textContent =
+                "BLE Connected";
 
 
-        // ----------------------------------------------------
-        // SUCCESS
-        // ----------------------------------------------------
-
-        statusElement.innerText =
-            "Disambungkan! 🟢";
+            document.getElementById("connectButton")
+                .style.display = "none";
 
 
-        indicatorElement.className =
-            "indicator connected";
+            document.getElementById("disconnectButton")
+                .style.display = "inline-block";
 
 
-        connectButton.innerText =
-            "🟢 ESP32 Disambungkan";
+            document.getElementById("message").textContent =
+                "ESP32 connected. Menunggu bacaan AD8318...";
 
 
-        connectButton.disabled =
-            true;
+        }
 
+        catch(error) {
 
-    }
+            console.error(error);
 
-    catch (error) {
+            document.getElementById("message").textContent =
+                "BLE connection gagal: " + error.message;
 
-
-        console.error(
-            "BLE ERROR:",
-            error
-        );
-
-
-        statusElement.innerText =
-            "Ralat: " +
-            error.message;
-
-
-        indicatorElement.className =
-            "indicator error";
-
-
-        connectButton.innerText =
-            "🔵 Cuba Sambung Semula";
-
-
-        connectButton.disabled =
-            false;
+        }
 
     }
 
-}
+
+    /* =========================================================
+       DISCONNECT BLE
+       ========================================================= */
+
+    function putusBLE() {
+
+        if (bleDevice && bleDevice.gatt.connected) {
+
+            bleDevice.gatt.disconnect();
+
+        }
+
+    }
 
 
-// ============================================================
-// RECEIVE BLE DATA
-// ============================================================
-//
-// ESP32 menghantar:
-//
-// 1.732
-//
-// bukannya:
-//
-// F=2450.000MHz,V=1.732
-//
-// ============================================================
+    /* =========================================================
+       BLE DISCONNECTED
+       ========================================================= */
 
-function terimaDataBLE(
-    event
-) {
+    function apabilaBLEPutus() {
+
+        document.getElementById("statusDot")
+            .classList.remove("connected");
 
 
-    try {
+        document.getElementById("connectionStatus")
+            .textContent =
+            "BLE Disconnected";
 
 
-        const decoder =
-            new TextDecoder("utf-8");
+        document.getElementById("connectButton")
+            .style.display = "inline-block";
 
 
-        const dataRaw =
-            decoder
-                .decode(
+        document.getElementById("disconnectButton")
+            .style.display = "none";
+
+
+        document.getElementById("message").textContent =
+            "ESP32 telah terputus daripada BLE.";
+
+    }
+
+
+    /* =========================================================
+       RECEIVE BLE DATA
+       ========================================================= */
+
+    function terimaDataBLE(event) {
+
+        try {
+
+            const decoder =
+                new TextDecoder("utf-8");
+
+
+            const data =
+                decoder.decode(
                     event.target.value
-                )
-                .trim();
+                ).trim();
 
 
-        console.log(
-            "Data BLE:",
-            dataRaw
-        );
+            console.log("BLE DATA:", data);
 
 
-        // ----------------------------------------------------
-        // CONVERT STRING → NUMBER
-        // ----------------------------------------------------
+            /*
+                Supported formats:
 
-        const voltage =
-            parseFloat(dataRaw);
+                1.
+                1.732
+
+                2.
+                1.732 V
+
+                3.
+                V=1.732
+
+                4.
+                F=2450.000MHz,V=1.732
+
+                5.
+                {"voltage":1.732,"frequency":2450}
+            */
 
 
-        // ----------------------------------------------------
-        // CHECK VALID VOLTAGE
-        // ----------------------------------------------------
+            const voltage =
+                bacaVoltage(data);
 
-        if (
-            isNaN(voltage)
-        ) {
 
-            console.warn(
-                "Data voltage tidak sah:",
-                dataRaw
+            const frequency =
+                bacaFrequency(data);
+
+
+            if (voltage !== null) {
+
+                updateVoltage(voltage);
+
+            }
+
+
+            if (frequency !== null) {
+
+                updateFrequency(frequency);
+
+            }
+
+        }
+
+        catch(error) {
+
+            console.error(
+                "BLE data error:",
+                error
             );
 
-            return;
+        }
+
+    }
+
+
+    /* =========================================================
+       VOLTAGE PARSER
+       ========================================================= */
+
+    function bacaVoltage(data) {
+
+        if (typeof data !== "string") {
+
+            return null;
+
         }
 
 
-        // ----------------------------------------------------
-        // DISPLAY VOLT
-        // ----------------------------------------------------
-
-        voltValueElement.innerText =
-            voltage.toFixed(3) +
-            " V";
+        data = data.trim();
 
 
-        // ----------------------------------------------------
-        // DISPLAY MILLIVOLT
-        // ----------------------------------------------------
+        if (!data) {
 
-        const millivolt =
-            voltage * 1000;
+            return null;
 
-
-        milliVoltElement.innerText =
-            millivolt.toFixed(0) +
-            " mV";
+        }
 
 
-        // ----------------------------------------------------
-        // THRESHOLD CHECK
-        // ----------------------------------------------------
+        /*
+            JSON FORMAT
+        */
 
-        if (
-            voltage >
-            VOLTAGE_THRESHOLD
-        ) {
+        try {
 
+            if (data.startsWith("{")) {
 
-            // ----------------------------------------------
-            // SUSU ROSAK
-            // ----------------------------------------------
-
-            milkStatusElement.innerText =
-                "🚨 SUSU ROSAK";
+                const json =
+                    JSON.parse(data);
 
 
-            milkStatusElement.className =
-                "milkStatus rosak";
+                const v =
+                    Number(json.voltage);
 
 
-            // ----------------------------------------------
-            // ALERT
-            // ----------------------------------------------
+                if (Number.isFinite(v)) {
 
-            if (
-                !alertSudahKeluar
-            ) {
+                    return v;
 
-                alertSudahKeluar =
-                    true;
+                }
 
-
-                tunjukAlert(
-                    voltage
-                );
             }
 
+        }
+
+        catch(error) {
+
+            // Ignore invalid JSON
+
+        }
+
+
+        /*
+            V=1.732
+            VOLTAGE=1.732
+            VOLT=1.732
+        */
+
+        const match1 =
+            data.match(
+                /(?:VOLTAGE|VOLT|V)\s*[=:]\s*([-+]?(?:\d+\.?\d*|\.\d+))/i
+            );
+
+
+        if (match1) {
+
+            const v =
+                Number(match1[1]);
+
+
+            if (Number.isFinite(v)) {
+
+                return v;
+
+            }
+
+        }
+
+
+        /*
+            1.732 V
+        */
+
+        const match2 =
+            data.match(
+                /([-+]?(?:\d+\.?\d*|\.\d+))\s*V\b/i
+            );
+
+
+        if (match2) {
+
+            const v =
+                Number(match2[1]);
+
+
+            if (Number.isFinite(v)) {
+
+                return v;
+
+            }
+
+        }
+
+
+        /*
+            Pure number:
+
+            1.732
+        */
+
+        const match3 =
+            data.match(
+                /^[-+]?(?:\d+\.?\d*|\.\d+)$/
+            );
+
+
+        if (match3) {
+
+            const v =
+                Number(match3[0]);
+
+
+            if (Number.isFinite(v)) {
+
+                return v;
+
+            }
+
+        }
+
+
+        return null;
+
+    }
+
+
+    /* =========================================================
+       FREQUENCY PARSER
+       ========================================================= */
+
+    function bacaFrequency(data) {
+
+        if (typeof data !== "string") {
+
+            return null;
+
+        }
+
+
+        /*
+            JSON
+        */
+
+        try {
+
+            if (data.startsWith("{")) {
+
+                const json =
+                    JSON.parse(data);
+
+
+                let f =
+                    Number(json.frequency);
+
+
+                if (Number.isFinite(f)) {
+
+                    /*
+                        Jika ESP32 menghantar
+                        2450 MHz
+                    */
+
+                    if (f < 100000) {
+
+                        return f;
+
+                    }
+
+
+                    /*
+                        Jika ESP32 menghantar
+                        2450000000 Hz
+                    */
+
+                    return f / 1000000;
+
+                }
+
+            }
+
+        }
+
+        catch(error) {
+
+            // Ignore invalid JSON
+
+        }
+
+
+        /*
+            F=2450.000MHz
+        */
+
+        const matchMHz =
+            data.match(
+                /F\s*[=:]\s*([-+]?(?:\d+\.?\d*|\.\d+))\s*MHz/i
+            );
+
+
+        if (matchMHz) {
+
+            const f =
+                Number(matchMHz[1]);
+
+
+            if (Number.isFinite(f)) {
+
+                return f;
+
+            }
+
+        }
+
+
+        /*
+            F=2450.000
+        */
+
+        const matchPlain =
+            data.match(
+                /F\s*[=:]\s*([-+]?(?:\d+\.?\d*|\.\d+))/i
+            );
+
+
+        if (matchPlain) {
+
+            const f =
+                Number(matchPlain[1]);
+
+
+            if (Number.isFinite(f)) {
+
+                return f;
+
+            }
+
+        }
+
+
+        return null;
+
+    }
+
+
+    /* =========================================================
+       UPDATE VOLTAGE
+       ========================================================= */
+
+    function updateVoltage(voltage) {
+
+        if (!Number.isFinite(voltage)) {
+
+            return;
+
+        }
+
+
+        document.getElementById("voltageValue")
+            .textContent =
+            voltage.toFixed(3);
+
+
+        document.getElementById("voltageMV")
+            .textContent =
+            Math.round(voltage * 1000);
+
+
+        voltageHistory.push(voltage);
+
+        timeHistory.push(sampleNumber++);
+
+
+        if (voltageHistory.length >
+            MAX_GRAPH_POINTS) {
+
+            voltageHistory.shift();
+
+            timeHistory.shift();
+
+        }
+
+
+        periksaStatusSusu(voltage);
+
+        drawGraph();
+
+    }
+
+
+    /* =========================================================
+       UPDATE FREQUENCY
+       ========================================================= */
+
+    function updateFrequency(frequencyMHz) {
+
+        if (!Number.isFinite(frequencyMHz)) {
+
+            return;
+
+        }
+
+
+        document.getElementById("frequencyValue")
+            .textContent =
+            frequencyMHz.toFixed(3);
+
+    }
+
+
+    /* =========================================================
+       MILK STATUS
+       ========================================================= */
+
+    function periksaStatusSusu(voltage) {
+
+        const statusElement =
+            document.getElementById("milkStatus");
+
+
+        if (voltage > VOLTAGE_THRESHOLD) {
+
+            statusElement.textContent =
+                "SUSU ROSAK";
+
+
+            statusElement.className =
+                "value status-spoiled";
+
+
+            document.getElementById("alertVoltage")
+                .textContent =
+                voltage.toFixed(3);
+
+
+            document.getElementById("alertBox")
+                .style.display =
+                "block";
 
         }
 
         else {
 
-
-            // ----------------------------------------------
-            // NORMAL
-            // ----------------------------------------------
-
-            milkStatusElement.innerText =
-                "🥛 NORMAL";
+            statusElement.textContent =
+                "NORMAL";
 
 
-            milkStatusElement.className =
-                "milkStatus normal";
-
-
-            // ----------------------------------------------
-            // RESET ALERT
-            //
-            // Jika voltage turun kembali
-            // ke bawah/equal 2V,
-            // alert boleh muncul semula
-            // apabila naik melebihi 2V.
-            // ----------------------------------------------
-
-            alertSudahKeluar =
-                false;
+            statusElement.className =
+                "value status-normal";
 
         }
 
     }
 
-    catch (error) {
 
-        console.error(
-            "Data processing error:",
-            error
+    /* =========================================================
+       ALERT
+       ========================================================= */
+
+    function tutupAlert() {
+
+        document.getElementById("alertBox")
+            .style.display =
+            "none";
+
+    }
+
+
+    /* =========================================================
+       DRAW GRAPH
+       ========================================================= */
+
+    function drawGraph() {
+
+        const canvas =
+            document.getElementById(
+                "voltageGraph"
+            );
+
+
+        const ctx =
+            canvas.getContext("2d");
+
+
+        const width =
+            canvas.width;
+
+
+        const height =
+            canvas.height;
+
+
+        /*
+            CLEAR
+        */
+
+        ctx.clearRect(
+            0,
+            0,
+            width,
+            height
         );
 
+
+        /*
+            GRAPH RANGE
+
+            0 - 3 V
+        */
+
+        const minVoltage = 0;
+
+        const maxVoltage = 3;
+
+
+        const paddingLeft = 65;
+
+        const paddingRight = 20;
+
+        const paddingTop = 25;
+
+        const paddingBottom = 45;
+
+
+        const graphWidth =
+            width -
+            paddingLeft -
+            paddingRight;
+
+
+        const graphHeight =
+            height -
+            paddingTop -
+            paddingBottom;
+
+
+        /*
+            BACKGROUND
+        */
+
+        ctx.fillStyle =
+            "#0b1220";
+
+        ctx.fillRect(
+            0,
+            0,
+            width,
+            height
+        );
+
+
+        /*
+            GRID
+        */
+
+        ctx.strokeStyle =
+            "#263244";
+
+        ctx.lineWidth = 1;
+
+
+        for (let i = 0; i <= 6; i++) {
+
+            const y =
+                paddingTop +
+                (graphHeight / 6) * i;
+
+
+            ctx.beginPath();
+
+            ctx.moveTo(
+                paddingLeft,
+                y
+            );
+
+            ctx.lineTo(
+                width - paddingRight,
+                y
+            );
+
+            ctx.stroke();
+
+
+            /*
+                Y LABEL
+            */
+
+            const voltage =
+                maxVoltage -
+                (i * 0.5);
+
+
+            ctx.fillStyle =
+                "#9ca3af";
+
+            ctx.font =
+                "13px Arial";
+
+            ctx.textAlign =
+                "right";
+
+            ctx.fillText(
+                voltage.toFixed(1) + " V",
+                paddingLeft - 10,
+                y + 5
+            );
+
+        }
+
+
+        /*
+            THRESHOLD LINE
+        */
+
+        const thresholdY =
+            paddingTop +
+            graphHeight -
+            (
+                (VOLTAGE_THRESHOLD -
+                minVoltage) /
+                (maxVoltage -
+                minVoltage)
+            ) *
+            graphHeight;
+
+
+        ctx.strokeStyle =
+            "#ef4444";
+
+        ctx.lineWidth = 2;
+
+        ctx.setLineDash(
+            [8, 5]
+        );
+
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            paddingLeft,
+            thresholdY
+        );
+
+        ctx.lineTo(
+            width - paddingRight,
+            thresholdY
+        );
+
+        ctx.stroke();
+
+
+        ctx.setLineDash([]);
+
+
+        /*
+            THRESHOLD LABEL
+        */
+
+        ctx.fillStyle =
+            "#ef4444";
+
+        ctx.font =
+            "bold 13px Arial";
+
+        ctx.textAlign =
+            "left";
+
+        ctx.fillText(
+            "Threshold 2.000 V",
+            paddingLeft + 10,
+            thresholdY - 8
+        );
+
+
+        /*
+            X AXIS LABEL
+        */
+
+        ctx.fillStyle =
+            "#9ca3af";
+
+        ctx.font =
+            "13px Arial";
+
+        ctx.textAlign =
+            "center";
+
+        ctx.fillText(
+            "Sample",
+            width / 2,
+            height - 12
+        );
+
+
+        /*
+            GRAPH TITLE Y
+        */
+
+        ctx.save();
+
+        ctx.translate(
+            18,
+            height / 2
+        );
+
+        ctx.rotate(
+            -Math.PI / 2
+        );
+
+        ctx.fillText(
+            "AD8318 Voltage",
+            0,
+            0
+        );
+
+        ctx.restore();
+
+
+        /*
+            NO DATA
+        */
+
+        if (voltageHistory.length === 0) {
+
+            ctx.fillStyle =
+                "#6b7280";
+
+            ctx.font =
+                "16px Arial";
+
+            ctx.textAlign =
+                "center";
+
+            ctx.fillText(
+                "Waiting for AD8318 data...",
+                width / 2,
+                height / 2
+            );
+
+            return;
+
+        }
+
+
+        /*
+            PLOT DATA
+        */
+
+        ctx.beginPath();
+
+
+        for (
+            let i = 0;
+            i < voltageHistory.length;
+            i++
+        ) {
+
+            const voltage =
+                voltageHistory[i];
+
+
+            const x =
+                paddingLeft +
+                (
+                    i /
+                    Math.max(
+                        voltageHistory.length - 1,
+                        1
+                    )
+                ) *
+                graphWidth;
+
+
+            const y =
+                paddingTop +
+                graphHeight -
+                (
+                    (voltage -
+                    minVoltage) /
+                    (maxVoltage -
+                    minVoltage)
+                ) *
+                graphHeight;
+
+
+            if (i === 0) {
+
+                ctx.moveTo(
+                    x,
+                    y
+                );
+
+            }
+
+            else {
+
+                ctx.lineTo(
+                    x,
+                    y
+                );
+
+            }
+
+        }
+
+
+        ctx.strokeStyle =
+            "#facc15";
+
+        ctx.lineWidth = 3;
+
+        ctx.stroke();
+
+
+        /*
+            DATA POINTS
+        */
+
+        for (
+            let i = 0;
+            i < voltageHistory.length;
+            i++
+        ) {
+
+            const voltage =
+                voltageHistory[i];
+
+
+            const x =
+                paddingLeft +
+                (
+                    i /
+                    Math.max(
+                        voltageHistory.length - 1,
+                        1
+                    )
+                ) *
+                graphWidth;
+
+
+            const y =
+                paddingTop +
+                graphHeight -
+                (
+                    (voltage -
+                    minVoltage) /
+                    (maxVoltage -
+                    minVoltage)
+                ) *
+                graphHeight;
+
+
+            ctx.beginPath();
+
+
+            ctx.arc(
+                x,
+                y,
+                3,
+                0,
+                Math.PI * 2
+            );
+
+
+            if (
+                voltage >
+                VOLTAGE_THRESHOLD
+            ) {
+
+                ctx.fillStyle =
+                    "#ef4444";
+
+            }
+
+            else {
+
+                ctx.fillStyle =
+                    "#facc15";
+
+            }
+
+
+            ctx.fill();
+
+        }
+
     }
-
-}
-
-
-// ============================================================
-// SHOW ALERT
-// ============================================================
-
-function tunjukAlert(
-    voltage
-) {
-
-
-    alertVoltageElement.innerText =
-        voltage.toFixed(3) +
-        " V";
-
-
-    alertBox.classList.add(
-        "show"
-    );
-
-
-    // --------------------------------------------------------
-    // Browser alert tambahan
-    // --------------------------------------------------------
-    //
-    // Tidak digunakan kerana dialog browser
-    // boleh mengganggu pengalaman pengguna.
-    //
-    // UI alert merah di atas sudah mencukupi.
-    // --------------------------------------------------------
-
-}
-
-
-// ============================================================
-// CLOSE ALERT
-// ============================================================
-
-function tutupAlert() {
-
-    alertBox.classList.remove(
-        "show"
-    );
-
-}
-
-
-// ============================================================
-// DISCONNECTED
-// ============================================================
-
-function apabilaTerputus() {
-
-
-    statusElement.innerText =
-        "Terputus daripada ESP32";
-
-
-    indicatorElement.className =
-        "indicator error";
-
-
-    connectButton.innerText =
-        "🔵 Sambung Semula";
-
-
-    connectButton.disabled =
-        false;
-
-
-    characteristic =
-        null;
-
-
-}
-
-
-// ============================================================
-// PAGE LOAD
-// ============================================================
-
-window.addEventListener(
-    "load",
-    function() {
-
-        periksaWebBluetooth();
-
-    }
-);
-
 
 </script>
 
-
 </body>
-
 </html>
